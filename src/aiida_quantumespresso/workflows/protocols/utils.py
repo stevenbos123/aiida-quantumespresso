@@ -98,9 +98,8 @@ def recursive_merge(left: dict, right: dict) -> dict:
             if isinstance(value, collections.abc.Mapping) and isinstance(right[key], collections.abc.Mapping):
                 right[key] = recursive_merge(value, right[key])
 
-    merged = left.copy()
+    merged = left
     merged.update(right)
-
     return merged
 
 

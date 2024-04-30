@@ -113,7 +113,7 @@ class PwBaseWorkChain(ProtocolMixin, BaseRestartWorkChain):
         spin_type=SpinType.NONE,
         initial_magnetic_moments=None,
         options=None,
-        **_
+        **kwargs
     ):
         """Return a builder prepopulated with inputs selected according to the chosen protocol.
 
@@ -210,7 +210,7 @@ class PwBaseWorkChain(ProtocolMixin, BaseRestartWorkChain):
 
         if options:
             metadata['options'] = recursive_merge(inputs['pw']['metadata']['options'], options)
-
+        print("options: ",options)
         # pylint: disable=no-member
         builder = cls.get_builder()
         builder.pw['code'] = code
@@ -230,6 +230,11 @@ class PwBaseWorkChain(ProtocolMixin, BaseRestartWorkChain):
         builder.kpoints_force_parity = orm.Bool(inputs['kpoints_force_parity'])
         builder.max_iterations = orm.Int(inputs['max_iterations'])
         # pylint: enable=no-member
+
+        if kwargs:
+            builder = recursive_merge(builder.pw, kwargs)
+        if str(code.computer.get_scheduler()) == 'SgeScheduler':
+            builder['pw']['metadata']['options']['resources'].pop('num_machines', None)
 
         return builder
 
