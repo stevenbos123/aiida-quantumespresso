@@ -100,6 +100,7 @@ def recursive_merge(left: dict, right: dict) -> dict:
 
     merged = left
     merged.update(right)
+    
     return merged
 
 
