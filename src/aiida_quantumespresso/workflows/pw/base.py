@@ -232,10 +232,8 @@ class PwBaseWorkChain(ProtocolMixin, BaseRestartWorkChain):
         # pylint: enable=no-member
 
         if kwargs:
-            builder = recursive_merge(builder.pw, kwargs)
-        if str(code.computer.get_scheduler()) == 'SgeScheduler':
-            builder['pw']['metadata']['options']['resources'].pop('num_machines', None)
-
+            builder.pw = recursive_merge(builder.pw, kwargs)
+            
         return builder
 
     def setup(self):
