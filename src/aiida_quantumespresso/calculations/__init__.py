@@ -29,7 +29,7 @@ UpfData = DataFactory('pseudo.upf')
 class BasePwCpInputGenerator(CalcJob):
     """Base `CalcJob` for implementations for pw.x and cp.x of Quantum ESPRESSO."""
 
-    _PSEUDO_SUBFOLDER = './pseudo/'
+    _PSEUDO_SUBFOLDER = './'
     _OUTPUT_SUBFOLDER = './out/'
     _PREFIX = 'aiida'
     _DEFAULT_INPUT_FILE = 'aiida.in'
@@ -757,7 +757,7 @@ class BasePwCpInputGenerator(CalcJob):
             inputfile += f'\n{tail}'
 
         if input_params:
-            raise exceptions.InputValidationError(
+            warnings.warn(
                 'The following namelists are specified in input_params, but are not valid namelists for the current '
                 f'type of calculation: {",".join(list(input_params.keys()))}'
             )

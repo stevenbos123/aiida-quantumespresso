@@ -61,7 +61,7 @@ class PwInputFile(StructureParseMixin, BasePwInputFile):
         return kpoints
 
 
-def create_builder_from_file(input_folder, input_file_name, code, metadata, pseudo_folder_path=None):
+def create_builder_from_file(input_folder, input_file_name, code, metadata, pseudo_folder_path=None, pseudos=None):
     """Create a populated process builder for a `PwCalculation` from a standard QE input file and pseudo (upf) files.
 
     :param input_folder: the folder containing the input file
@@ -109,22 +109,25 @@ def create_builder_from_file(input_folder, input_file_name, code, metadata, pseu
     builder.parameters = Dict(parameters_dict)
 
     # Get or create a UpfData node for the pseudopotentials used for the calculation.
-    pseudos_map = {}
-    if pseudo_folder_path is None:
-        pseudo_folder_path = input_folder
-    if isinstance(pseudo_folder_path, str):
-        pseudo_folder_path = Folder(pseudo_folder_path)
-    names = parsed_file.atomic_species['names']
-    pseudo_file_names = parsed_file.atomic_species['pseudo_file_names']
-    pseudo_file_map = {}
-    for name, fname in zip(names, pseudo_file_names):
-        if fname not in pseudo_file_map:
-            local_path = pseudo_folder_path.get_abs_path(fname)
-            with open(local_path, 'rb') as handle:
-                upf = UpfData(handle)
-            pseudo_file_map[fname] = upf
-        pseudos_map[name] = pseudo_file_map[fname]
-    builder.pseudos = pseudos_map
+    if pseudos:
+        builder.pseudos = pseudos
+    else:
+        pseudos_map = {}
+        if pseudo_folder_path is None:
+            pseudo_folder_path = input_folder
+        if isinstance(pseudo_folder_path, str):
+            pseudo_folder_path = Folder(pseudo_folder_path)
+        names = parsed_file.atomic_species['names']
+        pseudo_file_names = parsed_file.atomic_species['pseudo_file_names']
+        pseudo_file_map = {}
+        for name, fname in zip(names, pseudo_file_names):
+            if fname not in pseudo_file_map:
+                local_path = pseudo_folder_path.get_abs_path(fname)
+                with open(local_path, 'rb') as handle:
+                    upf = UpfData(handle)
+                pseudo_file_map[fname] = upf
+            pseudos_map[name] = pseudo_file_map[fname]
+        builder.pseudos = pseudos_map
 
     settings_dict = {}
     if parsed_file.k_points['type'] == 'gamma':

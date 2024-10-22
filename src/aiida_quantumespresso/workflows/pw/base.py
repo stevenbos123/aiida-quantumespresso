@@ -230,10 +230,18 @@ class PwBaseWorkChain(ProtocolMixin, BaseRestartWorkChain):
         builder.kpoints_force_parity = orm.Bool(inputs['kpoints_force_parity'])
         builder.max_iterations = orm.Int(inputs['max_iterations'])
         # pylint: enable=no-member
+        if str(code.computer.get_scheduler()) == 'SgeScheduler':
+            try:
+                builder['pw']['metadata']['options']['resources'].pop('num_machines', None)
+            except AttributeError as exception:
+                raise NotImplementedError(
+                    'SgeScheduler is not correctly implemented : num_machines is in the builder somewhere'
+                )
+                
 
         if kwargs:
             builder.pw = recursive_merge(builder.pw, kwargs)
-            
+        print("builder: ", builder)
         return builder
 
     def setup(self):
