@@ -125,7 +125,7 @@ aiida-quantumespresso = 'aiida_quantumespresso.cli:cmd_root'
 'quantumespresso.xps' = 'aiida_quantumespresso.workflows.xps:XpsWorkChain'
 'quantumespresso.xspectra.core' = 'aiida_quantumespresso.workflows.xspectra.core:XspectraCoreWorkChain'
 'quantumespresso.xspectra.crystal' = 'aiida_quantumespresso.workflows.xspectra.crystal:XspectraCrystalWorkChain'
-
+'quantumespresso.pw.strain' = 'aiida_quantumespresso.workflows.pw.strain:ShearStrainWorkChain'
 [tool.flit.module]
 name = 'aiida_quantumespresso'
 
