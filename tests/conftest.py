@@ -1,10 +1,11 @@
 # -*- coding: utf-8 -*-
-# pylint: disable=redefined-outer-name,too-many-statements
+# pylint: disable=redefined-outer-name,too-many-statements,too-many-lines
 """Initialise a text database and profile for pytest."""
 from collections.abc import Mapping
 import io
 import os
 import pathlib
+from pathlib import Path
 import shutil
 import tempfile
 
@@ -287,11 +288,13 @@ def generate_calc_job_node(fixture_localhost):
 
         if retrieve_temporary:
             dirpath, filenames = retrieve_temporary
+            dirpath = Path(dirpath)
+            filepaths = []
             for filename in filenames:
-                try:
-                    shutil.copy(os.path.join(filepath_folder, filename), os.path.join(dirpath, filename))
-                except FileNotFoundError:
-                    pass  # To test the absence of files in the retrieve_temporary folder
+                filepaths.extend(Path(filepath_folder).glob(filename))
+
+            for filepath in filepaths:
+                shutil.copy(filepath, dirpath / filepath.name)
 
         if filepath_folder:
             retrieved = orm.FolderData()
@@ -299,11 +302,8 @@ def generate_calc_job_node(fixture_localhost):
 
             # Remove files that are supposed to be only present in the retrieved temporary folder
             if retrieve_temporary:
-                for filename in filenames:
-                    try:
-                        retrieved.base.repository.delete_object(filename)
-                    except OSError:
-                        pass  # To test the absence of files in the retrieve_temporary folder
+                for filepath in filepaths:
+                    retrieved.delete_object(filepath.name)
 
             retrieved.base.links.add_incoming(node, link_type=LinkType.CREATE, link_label='retrieved')
             retrieved.store()
@@ -595,6 +595,27 @@ def generate_inputs_q2r(fixture_sandbox, fixture_localhost, fixture_code, genera
 
 
 @pytest.fixture
+def generate_inputs_bands(fixture_sandbox, fixture_localhost, fixture_code, generate_remote_data):
+    """Generate default inputs for a `BandsCalculation."""
+
+    def _generate_inputs_bands():
+        """Generate default inputs for a `BandsCalculation."""
+        from aiida_quantumespresso.utils.resources import get_default_options
+
+        inputs = {
+            'code': fixture_code('quantumespresso.bands'),
+            'parent_folder': generate_remote_data(fixture_localhost, fixture_sandbox.abspath, 'quantumespresso.pw'),
+            'metadata': {
+                'options': get_default_options()
+            }
+        }
+
+        return inputs
+
+    return _generate_inputs_bands
+
+
+@pytest.fixture
 def generate_inputs_ph(
     generate_calc_job_node, generate_structure, fixture_localhost, fixture_code, generate_kpoints_mesh
 ):
@@ -858,8 +879,8 @@ def generate_workchain_ph(generate_workchain, generate_inputs_ph, generate_calc_
 def generate_workchain_pdos(generate_workchain, generate_inputs_pw, fixture_code):
     """Generate an instance of a `PdosWorkChain`."""
 
-    def _generate_workchain_pdos():
-        from aiida.orm import Bool, Dict
+    def _generate_workchain_pdos(emin=None, emax=None, energy_range_vs_fermi=None):
+        from aiida.orm import Bool, Dict, List
 
         from aiida_quantumespresso.utils.resources import get_default_options
 
@@ -881,12 +902,15 @@ def generate_workchain_pdos(generate_workchain, generate_inputs_pw, fixture_code
 
         dos_params = {
             'DOS': {
-                'Emin': -10,
-                'Emax': 10,
                 'DeltaE': 0.01,
             }
         }
-        projwfc_params = {'PROJWFC': {'Emin': -10, 'Emax': 10, 'DeltaE': 0.01, 'ngauss': 0, 'degauss': 0.01}}
+        projwfc_params = {'PROJWFC': {'DeltaE': 0.01, 'ngauss': 0, 'degauss': 0.01}}
+
+        if emin and emax:
+            dos_params['DOS'].update({'Emin': emin, 'Emax': emax})
+            projwfc_params['PROJWFC'].update({'Emin': emin, 'Emax': emax})
+
         dos = {
             'code': fixture_code('quantumespresso.dos'),
             'parameters': Dict(dos_params),
@@ -907,9 +931,10 @@ def generate_workchain_pdos(generate_workchain, generate_inputs_pw, fixture_code
             'nscf': nscf,
             'dos': dos,
             'projwfc': projwfc,
-            'align_to_fermi': Bool(True),
             'dry_run': Bool(True)
         }
+        if energy_range_vs_fermi:
+            inputs.update({'energy_range_vs_fermi': List(energy_range_vs_fermi)})
 
         return generate_workchain(entry_point, inputs)
 
